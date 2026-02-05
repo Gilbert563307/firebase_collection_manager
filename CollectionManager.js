@@ -5,15 +5,13 @@ import {
   serverTimestamp,
   FieldValue,
   Timestamp,
-  doc,
-  where,
-  orderBy,
   query,
-  Query,
   getDocs,
-  limit,
   startAfter,
   getCountFromServer,
+  QuerySnapshot,
+  QueryConstraint,
+  limit,
 } from "firebase/firestore";
 import { CrudCollectionManager } from "./CrudCollectionManager";
 import { PageAble } from "./domain/PageAble";
@@ -40,7 +38,7 @@ export class CollectionManager extends CrudCollectionManager {
 
   /**
    *
-   
+   * @returns {CollectionReference<>}
    */
   getCollectionReference() {
     return this.#collectionRef;
@@ -54,60 +52,45 @@ export class CollectionManager extends CrudCollectionManager {
     return serverTimestamp();
   }
 
+  /**
+   *
+   * @returns {string}
+   */
   getCollectionName() {
     return this.#collectionName;
   }
 
+  /**
+   *
+   * @returns {Firestore}
+   */
   getDatabase() {
     return this.#database;
   }
 
   /**
-   * Creates a {@link QueryFieldFilterConstraint} that enforces that documents
-   * must contain the specified field and that the value should satisfy the
-   * relation constraint provided.
-   *
-   * @param fieldPath - The path to compare
-   * @param opStr - The operation string (e.g "&lt;", "&lt;=", "==", "&lt;",
-   *   "&lt;=", "!=").
-   * @param value - The value for comparison
-   * @returns The created {@link QueryFieldFilterConstraint}.
+   * Returns a different collection  reference by the given collection name
+   * @param {string} name
+   *  @returns {CollectionReference<>}
    */
-  whereQuery(fieldPath, opStr, value) {
-    return where(fieldPath, opStr, value);
-  }
-
-  /**
-   * Creates a {@link QueryOrderByConstraint} that sorts the query result by the
-   * specified field, optionally in descending order instead of ascending.
-   *
-   * Note: Documents that do not contain the specified field will not be present
-   * in the query result.
-   *
-   * @param fieldPath - The field to sort by.
-   * @param directionStr - Optional direction to sort by ('asc' or 'desc'). If
-   * not specified, order will be ascending.
-   * @returns The created {@link QueryOrderByConstraint}.
-   */
-  orderByQuery(fieldPath, directionStr) {
-    return orderBy(fieldPath, directionStr);
-  }
-
-  /**
-   *
-   * @param {number} limitNumber
-   * @returns
-   */
-  limitByQuery(limitNumber) {
-    return limit(limitNumber);
+  getCollectionReferenceByCollectionName(name) {
+    return collection(this.#database, name);
   }
 
   /**
    *
    * @param {Array<any>} queryItems
+   */
+  createQuery(queryItems) {
+    return query(this.#collectionRef, ...queryItems);
+  }
+
+  /**
+   *
+   * @param {Array<QueryConstraint>} queryItems
    * @param {number} page
    * @param {number} itemsPerPage
-   * @returns {Promise<Array<any>>}
+   * @returns {Promise<Array<Object>>}
    */
   async getPaginatedDocumentsByQueryItems(queryItems, page, itemsPerPage) {
     const pageAble = new PageAble(queryItems, page, itemsPerPage);
@@ -128,6 +111,10 @@ export class CollectionManager extends CrudCollectionManager {
     return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
+  /**
+   *
+   * @returns {Promise<QuerySnapshot<>>}
+   */
   async getAllDocuments() {
     const querySnapshot = query(this.#collectionRef);
     return await getDocs(querySnapshot);
@@ -135,41 +122,18 @@ export class CollectionManager extends CrudCollectionManager {
 
   /**
    *
-   * @param {string} fieldName
-   * @param {string} searchText
-   * @returns {QueryFieldFilterConstraint}
+   * @param {Array<any>} queryItems
+   * @returns {Promise<number>}
    */
-  getSearchQueryBeforeFieldName(fieldName, searchText) {
-    if (!fieldName) {
-      throw new Error("Field name required");
-    }
-    const startText = searchText;
-    return where(fieldName, ">=", startText);
+  async countDocumentsByQuery(queryItems) {
+    const totalQuery = query(this.#collectionRef, ...queryItems);
+    const totalRecordsSnapShot = await getCountFromServer(totalQuery);
+    return totalRecordsSnapShot.data().count;
   }
 
-  /**
-   *
-   * @param {string} fieldName
-   * @param {string} searchText
-   * @returns {QueryFieldFilterConstraint}
-   */
-  getSearchQueryAfterFieldName(fieldName, searchText) {
-    if (!fieldName) {
-      throw new Error("Field name required");
-    }
-
-    const startText = searchText;
-    const endText = startText + "\uf8ff";
-    return where(fieldName, "<=", endText);
-  }
-
-  /**
-   *
-   * @param {*} name
-   * @returns
-   */
-  getCollectionReferenceByCollectionName(name) {
-    return collection(this.#database, name);
+  async getDocumentsByQuery(query) {
+    const querySnapshot = await getDocs(query);
+    return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
   async #getPaginatedCollectionQuery(currentPage, itemsPerPage, queryItems) {
@@ -197,41 +161,6 @@ export class CollectionManager extends CrudCollectionManager {
 
   /**
    *
-   * @param {Array<any>} queryItems
-   * @returns {Promise<number>}
-   */
-  async countDocumentsByQuery(queryItems) {
-    const totalQuery = query(this.#collectionRef, ...queryItems);
-    const totalRecordsSnapShot = await getCountFromServer(totalQuery);
-    return totalRecordsSnapShot.data().count;
-  }
-
-  /**
-   * //TODO GE THE REQUEST TYPE
-   * @param {any} queryItems
-   */
-  createQuery(queryItems) {
-    return query(this.#collectionRef, ...queryItems);
-  }
-
-  async getDocumentsByQuery(query) {
-    const querySnapshot = await getDocs(query);
-    return this.#convertQuerySnapShotDocs(querySnapshot);
-  }
-
-  /**
-   * @param {{ seconds: number, nanoseconds: number } } object
-   * @returns { Date }
-   */
-  #convertTimeStampToDate(object) {
-    if (object.nanoseconds === null || object.seconds === null) {
-      throw new Error("Something went wrong while converting time stamp to date");
-    }
-    return new Timestamp(object.seconds, object.nanoseconds).toDate();
-  }
-
-  /**
-   * METHOD STILL IN DEVELOPMENT
    * @param {*} querySnapshot
    * @returns {Array<any>}
    */
@@ -256,5 +185,16 @@ export class CollectionManager extends CrudCollectionManager {
         updated_at: data.updated_at.toDate(),
       };
     });
+  }
+
+  /**
+   * @param {{ seconds: number, nanoseconds: number } } object
+   * @returns { Date }
+   */
+  #convertTimeStampToDate(object) {
+    if (object.nanoseconds === null || object.seconds === null) {
+      throw new Error("Something went wrong while converting time stamp to date");
+    }
+    return new Timestamp(object.seconds, object.nanoseconds).toDate();
   }
 }
