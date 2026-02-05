@@ -94,6 +94,10 @@ const results = await citiesManager.getPaginatedDocumentsByQueryItems(
 ```
 
 
+### Npm
+[Npm url](https://www.npmjs.com/package/firebase_collection_manager)
+npm i firebase_collection_manager
+
 ### Youtube 
 Package usage tutorial
-https://youtu.be/s6lvNcDyfQ8
+[Tutorial](https://youtu.be/s6lvNcDyfQ8)
