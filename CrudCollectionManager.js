@@ -1,5 +1,5 @@
-import { addDoc, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
-import { QueryConstraintCollectionManager } from "./QueryConstraintCollectionManager";
+import { addDoc, collection, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { QueryConstraintCollectionManager } from "./QueryConstraintCollectionManager.js";
 
 export class CrudCollectionManager extends QueryConstraintCollectionManager {
   #collectionName;
