@@ -92,3 +92,8 @@ const results = await citiesManager.getPaginatedDocumentsByQueryItems(
   15 // Items per page
 );
 ```
+
+
+### Youtube 
+Package usage tutorial
+https://youtu.be/s6lvNcDyfQ8
