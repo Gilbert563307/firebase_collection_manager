@@ -13,8 +13,8 @@ import {
   QueryConstraint,
   limit,
 } from "firebase/firestore";
-import { CrudCollectionManager } from "./CrudCollectionManager";
-import { PageAble } from "./domain/PageAble";
+import { CrudCollectionManager } from "./CrudCollectionManager.js";
+import { PageAble } from "./domain/PageAble.js";
 
 const FIRST_PAGE = 1;
 export class CollectionManager extends CrudCollectionManager {

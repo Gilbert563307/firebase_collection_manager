@@ -12,7 +12,10 @@
   },
   "license": "ISC",
   "author": "Gilbert563307",
-  "type": "commonjs",
+  "type": "module",
+  "exports": {
+    ".": "./index.js"
+  },
   "main": "CollectionManager.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
