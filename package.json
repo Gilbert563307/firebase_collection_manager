@@ -1,0 +1,23 @@
+{
+  "name": "firebase_collection_manager",
+  "version": "1.0.0",
+  "description": "Firebase CRUD collection manager",
+  "homepage": "https://github.com/Gilbert563307/firebase_collection_manager#readme",
+  "bugs": {
+    "url": "https://github.com/Gilbert563307/firebase_collection_manager/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gilbert563307/firebase_collection_manager.git"
+  },
+  "license": "ISC",
+  "author": "Gilbert563307",
+  "type": "commonjs",
+  "main": "CollectionManager.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "firebase": "^12.9.0"
+  }
+}

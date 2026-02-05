@@ -1,11 +1,13 @@
 import { addDoc, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { QueryConstraintCollectionManager } from "./QueryConstraintCollectionManager";
 
-export class CrudCollectionManager {
+export class CrudCollectionManager extends QueryConstraintCollectionManager {
   #collectionName;
   #collectionRef;
   #database;
 
   constructor(database, collectionName) {
+    super(database, collectionName);
     this.#database = database;
 
     this.#collectionName = collectionName;
@@ -14,12 +16,18 @@ export class CrudCollectionManager {
   /**
    *
    * @param {Object} document
-   * @returns {void}
+   * @returns {Promise<boolean>}
    */
   async createDocument(document) {
     await addDoc(this.#collectionRef, document);
+    return true;
   }
 
+  /**
+   * 
+   * @param {string} documentId 
+   * @returns {Promise<Object>}
+   */
   async readDocument(documentId) {
     // Get a reference to the document in the database
     const reference = doc(this.#database, this.#collectionName, documentId);
