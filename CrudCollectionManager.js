@@ -11,6 +11,8 @@ export class CrudCollectionManager extends QueryConstraintCollectionManager {
     this.#database = database;
 
     this.#collectionName = collectionName;
+    //init config
+    this.#collectionRef = collection(this.#database, this.#collectionName);
   }
 
   /**
