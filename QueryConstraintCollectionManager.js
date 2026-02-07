@@ -1,9 +1,14 @@
-import { limit, orderBy, QueryFieldFilterConstraint, where } from "firebase/firestore";
+import { Firestore, limit, orderBy, QueryFieldFilterConstraint, QueryOrderByConstraint, where } from "firebase/firestore";
 
 export class QueryConstraintCollectionManager {
   #collectionName;
   #database;
 
+  /**
+   *
+   * @param {Firestore} database
+   * @param {*} collectionName
+   */
   constructor(database, collectionName) {
     this.#database = database;
     this.#collectionName = collectionName;
@@ -18,7 +23,7 @@ export class QueryConstraintCollectionManager {
    * @param opStr - The operation string (e.g "&lt;", "&lt;=", "==", "&lt;",
    *   "&lt;=", "!=").
    * @param value - The value for comparison
-   * @returns The created {@link QueryFieldFilterConstraint}.
+   * @returns  {QueryFieldFilterConstraint}.
    */
   whereQuery(fieldPath, opStr, value) {
     return where(fieldPath, opStr, value);
@@ -34,7 +39,7 @@ export class QueryConstraintCollectionManager {
    * @param fieldPath - The field to sort by.
    * @param directionStr - Optional direction to sort by ('asc' or 'desc'). If
    * not specified, order will be ascending.
-   * @returns The created {@link QueryOrderByConstraint}.
+   * @returns {QueryOrderByConstraint}.
    */
   orderByQuery(fieldPath, directionStr) {
     return orderBy(fieldPath, directionStr);

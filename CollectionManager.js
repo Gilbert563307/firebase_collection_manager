@@ -4,7 +4,6 @@ import {
   Firestore,
   serverTimestamp,
   FieldValue,
-  Timestamp,
   query,
   getDocs,
   startAfter,
@@ -12,6 +11,8 @@ import {
   QuerySnapshot,
   QueryConstraint,
   limit,
+  QueryFieldFilterConstraint,
+  Query,
 } from "firebase/firestore";
 import { CrudCollectionManager } from "./CrudCollectionManager.js";
 import { PageAble } from "./domain/PageAble.js";
@@ -29,6 +30,8 @@ export class CollectionManager extends CrudCollectionManager {
    */
   constructor(collectionName, database) {
     super(database, collectionName);
+    this.#validate(collectionName, database);
+
     this.#collectionName = collectionName;
     this.#database = database;
 
@@ -113,11 +116,22 @@ export class CollectionManager extends CrudCollectionManager {
 
   /**
    *
-   * @returns {Promise<QuerySnapshot<>>}
+   * @returns {Promise<Object>}
    */
   async getAllDocuments() {
-    const querySnapshot = query(this.#collectionRef);
-    return await getDocs(querySnapshot);
+    const querySnapshot = await getDocs(this.#collectionRef);
+    return this.#convertQuerySnapShotDocs(querySnapshot);
+  }
+
+  /**
+   *
+   * @param {Array<Query<any, any>>} queryItems
+   * @returns {Promise<Object>}
+   */
+  async getAllDocumentsByQuery(queryItems) {
+    const resultsQuery = query(this.#collectionRef, ...queryItems);
+    const querySnapshot = await getDocs(resultsQuery);
+    return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
   /**
@@ -131,11 +145,23 @@ export class CollectionManager extends CrudCollectionManager {
     return totalRecordsSnapShot.data().count;
   }
 
+  /**
+   *
+   * @param {Query} query
+   * @returns {Promise<Array<Object>>}
+   */
   async getDocumentsByQuery(query) {
     const querySnapshot = await getDocs(query);
     return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
+  /**
+   *
+   * @param {number} currentPage
+   * @param {number} itemsPerPage
+   * @param {Array<QueryFieldFilterConstraint >} queryItems
+   * @returns {Promise<Query<>>}
+   */
   async #getPaginatedCollectionQuery(currentPage, itemsPerPage, queryItems) {
     // Calculate the limit for fetching documents up to the current page
     const newPageLimit = currentPage * itemsPerPage;
@@ -162,7 +188,7 @@ export class CollectionManager extends CrudCollectionManager {
   /**
    *
    * @param {*} querySnapshot
-   * @returns {Array<any>}
+   * @returns {Array<Object>}
    */
   #convertQuerySnapShotDocs(querySnapshot) {
     return querySnapshot.docs.map((doc) => {
@@ -181,20 +207,25 @@ export class CollectionManager extends CrudCollectionManager {
       return {
         ...data,
         id: doc.id,
-        created_at: data.created_at.toDate(),
-        updated_at: data.updated_at.toDate(),
       };
     });
   }
 
   /**
-   * @param {{ seconds: number, nanoseconds: number } } object
-   * @returns { Date }
+   * @param {string} collectionName
+   * @param {Firestore} database
    */
-  #convertTimeStampToDate(object) {
-    if (object.nanoseconds === null || object.seconds === null) {
-      throw new Error("Something went wrong while converting time stamp to date");
+  #validate(collectionName, database) {
+    // Validate collectionName: Must be a string and not just whitespace
+    if (typeof collectionName !== "string" || !collectionName.trim()) {
+      throw new Error("Invalid collectionName: must be a non-empty string.");
     }
-    return new Timestamp(object.seconds, object.nanoseconds).toDate();
+
+    // Validate database: Check if the 'type' property matches the Firestore definition
+    const validTypes = ["firestore-lite", "firestore"];
+
+    if (!database || !validTypes.includes(database.type)) {
+      throw new Error(`Invalid database: expected firestore or firestore-lite, but got ${database?.type}`);
+    }
   }
 }
