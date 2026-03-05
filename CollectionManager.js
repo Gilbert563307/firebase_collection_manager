@@ -22,15 +22,21 @@ import { CrudCollectionManager } from "./CrudCollectionManager.js";
 import { PageAble } from "./domain/PageAble.js";
 
 const FIRST_PAGE = 1;
+
+/**
+ * Manages Firestore collection operations, providing utilities for
+ * querying, pagination, and batching.
+ * @extends CrudCollectionManager
+ */
 export class CollectionManager extends CrudCollectionManager {
   #collectionName;
   #collectionRef;
   #database;
 
   /**
-   * Collection name for the firebase collection
-   * @param {string} collectionName
-   * @param {Firestore} database
+   * Initializes the collection manager.
+   * @param {string} collectionName - Name of the Firestore collection.
+   * @param {Firestore} database - The Firestore database instance.
    */
   constructor(collectionName, database) {
     super(database, collectionName);
@@ -44,19 +50,23 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
-   * @returns {CollectionReference<>}
+   * Gets the reference for the current collection.
+   * @returns {CollectionReference}
    */
   getCollectionReference() {
     return this.#collectionRef;
   }
 
+  /**
+   * Creates a new document reference with an auto-generated ID.
+   * @returns {DocumentReference}
+   */
   createDocumentReference() {
     return doc(this.#collectionRef);
   }
 
   /**
-   *
+   * Returns a Firestore server timestamp FieldValue.
    * @returns {FieldValue}
    */
   getCurrentServerTimestamp() {
@@ -64,7 +74,7 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
+   * Returns the name of the managed collection.
    * @returns {string}
    */
   getCollectionName() {
@@ -72,7 +82,7 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
+   * Returns the Firestore database instance.
    * @returns {Firestore}
    */
   getDatabase() {
@@ -80,38 +90,54 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   * Returns a different collection  reference by the given collection name
-   * @param {string} name
-   *  @returns {CollectionReference<>}
+   * Returns a collection reference for a different collection by name.
+   * @param {string} name - The name of the target collection.
+   * @returns {CollectionReference}
    */
   getCollectionReferenceByCollectionName(name) {
+    if (typeof name !== "string" || !name.trim()) {
+      throw new Error("Collection name must be a non-empty string.");
+    }
     return collection(this.#database, name);
   }
 
   /**
-   *
-   * @param {Array<any>} queryItems
+   * Creates a Firestore Query based on provided constraints.
+   * @param {Array<QueryConstraint>} queryItems - Array of Firestore query constraints (where, orderBy, etc).
+   * @returns {Query}
    */
   createQuery(queryItems) {
+    if (!Array.isArray(queryItems)) throw new Error("queryItems must be an array.");
     return query(this.#collectionRef, ...queryItems);
   }
 
   /**
-   *  Create a query for a difference collection by providing the name without creating a new instance to get a new collection manager
-   * @param {string} collectionName
-   * @param {Array<any>} queryItems
-   * @returns
+   * Creates a query for a different collection without instantiating a new manager.
+   * @param {string} collectionName - The name of the collection to query.
+   * @param {Array<QueryConstraint>} queryItems - Array of Firestore query constraints.
+   * @returns {Query}
    */
   createQueryByGivenCollectionName(collectionName, queryItems) {
+    if (typeof collectionName !== "string" || !collectionName.trim()) {
+      throw new Error("Collection name must be a non-empty string.");
+    }
+
+    if (!Array.isArray(queryItems)) {
+      throw new Error("queryItems must be an array of Firestore constraints.");
+    }
     return query(collection(this.#database, collectionName), ...queryItems);
   }
 
+  /**
+   * Returns the Firestore Timestamp class.
+   * @returns {typeof Timestamp}
+   */
   getTimestampClass() {
     return Timestamp;
   }
 
   /**
-   *
+   * Creates a new write batch operation.
    * @returns {WriteBatch}
    */
   createBatchOperation() {
@@ -119,11 +145,11 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
-   * @param {Array<QueryConstraint>} queryItems
-   * @param {number} page
-   * @param {number} itemsPerPage
-   * @returns {Promise<Array<Object>>}
+   * Fetches a specific page of documents based on query constraints.
+   * @param {Array<QueryConstraint>} queryItems - Constraints for the query.
+   * @param {number} page - The page number to retrieve.
+   * @param {number} itemsPerPage - Number of documents per page.
+   * @returns {Promise<Array<Object>>} Resolved array of document data with IDs.
    */
   async getPaginatedDocumentsByQueryItems(queryItems, page, itemsPerPage) {
     const pageAble = new PageAble(queryItems, page, itemsPerPage);
@@ -145,8 +171,8 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
-   * @returns {Promise<Object>}
+   * Retrieves all documents within the collection.
+   * @returns {Promise<Array<Object>>}
    */
   async getAllDocuments() {
     const querySnapshot = await getDocs(this.#collectionRef);
@@ -154,55 +180,77 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
-   * @param {Array<any>} queryItems
-   * @returns {Promise<Object>}
+   * Retrieves all documents matching the provided query constraints.
+   * @param {Array<QueryConstraint>} queryItems - Firestore query constraints.
+   * @returns {Promise<Array<Object>>}
    */
   async getAllDocumentsByQuery(queryItems) {
+    if (!Array.isArray(queryItems)) throw new Error("queryItems must be an array.");
+
     const resultsQuery = query(this.#collectionRef, ...queryItems);
     const querySnapshot = await getDocs(resultsQuery);
     return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
   /**
-   * Returns a documentSnapshots by the given query
-   * @param {Array<any>} queryItems
-   * @returns
+   * Returns raw document snapshots based on a query.
+   * @param {Array<QueryConstraint>} queryItems - Firestore query constraints.
+   * @returns {Promise<QuerySnapshot>}
    */
   async getDocumentSnapShotsByQuery(queryItems) {
+    if (!Array.isArray(queryItems)) throw new Error("queryItems must be an array.");
+
     const resultsQuery = query(this.#collectionRef, ...queryItems);
     return await getDocs(resultsQuery);
   }
 
   /**
-   *
-   * @param {Array<any>} queryItems
-   * @returns {Promise<number>}
+   * Counts the total number of documents matching a specific query.
+   * @param {Array<QueryConstraint>} queryItems - Firestore query constraints.
+   * @returns {Promise<number>} The total count of matching documents.
    */
   async countDocumentsByQuery(queryItems) {
+    if (!Array.isArray(queryItems)) throw new Error("queryItems must be an array.");
+
     const totalQuery = query(this.#collectionRef, ...queryItems);
     const totalRecordsSnapShot = await getCountFromServer(totalQuery);
     return totalRecordsSnapShot.data().count;
   }
 
   /**
-   *
-   * @param {Query} query
+   * Executes a pre-constructed Firestore Query and returns the data.
+   * @param {Query} query - The Firestore Query object.
    * @returns {Promise<Array<Object>>}
    */
   async getDocumentsByQuery(query) {
+    if (!query) throw new Error("A valid Firestore Query object is required.");
     const querySnapshot = await getDocs(query);
     return this.#convertQuerySnapShotDocs(querySnapshot);
   }
 
   /**
-   *
+   * Internal helper to calculate pagination using cursor-based logic.
    * @param {number} currentPage
    * @param {number} itemsPerPage
-   * @param {Array<QueryFieldFilterConstraint >} queryItems
-   * @returns {Promise<Query<>>}
+   * @param {Array<QueryConstraint>} queryItems
+   * @returns {Promise<Query>}
+   * @private
    */
   async #getPaginatedCollectionQuery(currentPage, itemsPerPage, queryItems) {
+    // 1. Validation Check
+    if (
+      !Number.isInteger(currentPage) ||
+      currentPage <= 1 ||
+      !Number.isInteger(itemsPerPage) ||
+      itemsPerPage <= 0 ||
+      !Array.isArray(queryItems)
+    ) {
+      throw new Error(
+        `Invalid pagination parameters: currentPage(${currentPage}), itemsPerPage(${itemsPerPage}). ` +
+          `Ensure page is > 1 and itemsPerPage is > 0.`,
+      );
+    }
+
     // Calculate the limit for fetching documents up to the current page
     const newPageLimit = currentPage * itemsPerPage;
 
@@ -226,9 +274,10 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
-   *
-   * @param {*} querySnapshot
+   * Maps a QuerySnapshot into a standard array of objects including document IDs.
+   * @param {QuerySnapshot} querySnapshot - The snapshot from Firestore.
    * @returns {Array<Object>}
+   * @private
    */
   #convertQuerySnapShotDocs(querySnapshot) {
     return querySnapshot.docs.map((doc) => {
@@ -252,8 +301,11 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
+   * Validates the integrity of constructor arguments.
    * @param {string} collectionName
    * @param {Firestore} database
+   * @throws {Error} If validation fails.
+   * @private
    */
   #validate(collectionName, database) {
     // Validate collectionName: Must be a string and not just whitespace
