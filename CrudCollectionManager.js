@@ -1,4 +1,4 @@
-import { addDoc, collection, deleteDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { addDoc, collection, deleteDoc, doc, Firestore, getDoc, updateDoc } from "firebase/firestore";
 import { QueryConstraintCollectionManager } from "./QueryConstraintCollectionManager.js";
 
 export class CrudCollectionManager extends QueryConstraintCollectionManager {
@@ -6,6 +6,11 @@ export class CrudCollectionManager extends QueryConstraintCollectionManager {
   #collectionRef;
   #database;
 
+  /**
+   *
+   * @param {Firestore} database
+   * @param {string} collectionName
+   */
   constructor(database, collectionName) {
     super(database, collectionName);
     this.#database = database;
@@ -26,11 +31,15 @@ export class CrudCollectionManager extends QueryConstraintCollectionManager {
   }
 
   /**
-   * 
-   * @param {string} documentId 
+   *
+   * @param {string} documentId
    * @returns {Promise<Object>}
    */
   async readDocument(documentId) {
+    if (documentId === null || documentId === undefined || typeof documentId !== "string") {
+      throw new Error("Document id missing or is of incorrect type. Document type must be of type string");
+    }
+
     // Get a reference to the document in the database
     const reference = doc(this.#database, this.#collectionName, documentId);
 
@@ -53,6 +62,10 @@ export class CrudCollectionManager extends QueryConstraintCollectionManager {
    * @returns {Promise<boolean>}
    */
   async updateDocument(documentId, data) {
+    if (documentId === null || documentId === undefined || typeof documentId !== "string") {
+      throw new Error("Document id missing or is of incorrect type. Document type must be of type string");
+    }
+
     // get document
     const document = doc(this.#database, this.#collectionName, documentId);
     await updateDoc(document, data);
@@ -65,6 +78,10 @@ export class CrudCollectionManager extends QueryConstraintCollectionManager {
    * @returns {Promise<boolean>}
    */
   async deleteDocument(documentId) {
+    if (documentId === null || documentId === undefined || typeof documentId !== "string") {
+      throw new Error("Document id missing or is of incorrect type. Document type must be of type string");
+    }
+
     const documentRef = doc(this.#database, this.#collectionName, documentId);
     await deleteDoc(documentRef);
     return true;
