@@ -87,7 +87,7 @@ const queryItems = [
 
 // 2. Fetch page 1 (15 items per page)
 const results = await citiesManager.getPaginatedDocumentsByQueryItems(
-  filters, 
+  queryItems, 
   1, // Page number
   15 // Items per page
 );
