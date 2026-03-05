@@ -13,6 +13,10 @@ import {
   limit,
   QueryFieldFilterConstraint,
   Query,
+  Timestamp,
+  writeBatch,
+  WriteBatch,
+  doc,
 } from "firebase/firestore";
 import { CrudCollectionManager } from "./CrudCollectionManager.js";
 import { PageAble } from "./domain/PageAble.js";
@@ -45,6 +49,10 @@ export class CollectionManager extends CrudCollectionManager {
    */
   getCollectionReference() {
     return this.#collectionRef;
+  }
+
+  createDocumentReference() {
+    return doc(this.#collectionRef);
   }
 
   /**
@@ -89,6 +97,28 @@ export class CollectionManager extends CrudCollectionManager {
   }
 
   /**
+   *  Create a query for a difference collection by providing the name without creating a new instance to get a new collection manager
+   * @param {string} collectionName
+   * @param {Array<any>} queryItems
+   * @returns
+   */
+  createQueryByGivenCollectionName(collectionName, queryItems) {
+    return query(collection(this.#database, collectionName), ...queryItems);
+  }
+
+  getTimestampClass() {
+    return Timestamp;
+  }
+
+  /**
+   *
+   * @returns {WriteBatch}
+   */
+  createBatchOperation() {
+    return writeBatch(this.#database);
+  }
+
+  /**
    *
    * @param {Array<QueryConstraint>} queryItems
    * @param {number} page
@@ -125,13 +155,23 @@ export class CollectionManager extends CrudCollectionManager {
 
   /**
    *
-   * @param {Array<Query<any, any>>} queryItems
+   * @param {Array<any>} queryItems
    * @returns {Promise<Object>}
    */
   async getAllDocumentsByQuery(queryItems) {
     const resultsQuery = query(this.#collectionRef, ...queryItems);
     const querySnapshot = await getDocs(resultsQuery);
     return this.#convertQuerySnapShotDocs(querySnapshot);
+  }
+
+  /**
+   * Returns a documentSnapshots by the given query
+   * @param {Array<any>} queryItems
+   * @returns
+   */
+  async getDocumentSnapShotsByQuery(queryItems) {
+    const resultsQuery = query(this.#collectionRef, ...queryItems);
+    return await getDocs(resultsQuery);
   }
 
   /**
